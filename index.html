@@ -679,21 +679,21 @@
 <div class="flow-section">
   <div class="section-title" style="justify-content:center">⚡ 能量循环路径</div>
   <div class="flow-path">
-    <div class="flow-sym">☷</div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-sym">☳</div>
-    <div class="flow-arrow">→</div>
     <div class="flow-sym">☰</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-sym">☵</div>
+    <div class="flow-sym">☱</div>
     <div class="flow-arrow">→</div>
     <div class="flow-sym">☲</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-sym">☴</div>
+    <div class="flow-sym">☳</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☷</div>
     <div class="flow-arrow">→</div>
     <div class="flow-sym">☶</div>
     <div class="flow-arrow">→</div>
-    <div class="flow-sym">☱</div>
+    <div class="flow-sym">☵</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☴</div>
     <div class="flow-arrow" style="color:var(--wood)">↺</div>
   </div>
   <div class="flow-quote">
@@ -705,32 +705,33 @@
 <div class="safe-area"></div>
 
 <script>
-// ───── 环形图绘制 ─────
+// ───── 环形图绘制（先天八卦方位）─────
 const canvas = document.getElementById('ringCanvas');
 const ctx = canvas.getContext('2d');
 const cx = 150, cy = 150;
 
+// 先天八卦方位（angle = 0 为圆环正上方，顺时针排列）
 const trigrams = [
-  { sym: '☷', name: '坤', color: '#c8a96e', angle: -90 },
-  { sym: '☳', name: '震', color: '#a78bfa', angle: -45 },
-  { sym: '☰', name: '乾', color: '#f5c842', angle: 0 },
-  { sym: '☵', name: '坎', color: '#4fa3e0', angle: 45 },
-  { sym: '☲', name: '离', color: '#ff6b35', angle: 90 },
-  { sym: '☴', name: '巽', color: '#5ecb7a', angle: 135 },
-  { sym: '☶', name: '艮', color: '#b0c4de', angle: 180 },
-  { sym: '☱', name: '兑', color: '#38bdf8', angle: 225 },
-];
-
-const phaseColors = [
-  { start: -90, end: 0, color: 'rgba(245,200,66,0.15)' },   // 阶段一
-  { start: 0, end: 135, color: 'rgba(79,163,224,0.15)' },   // 阶段二
-  { start: 135, end: 270, color: 'rgba(56,189,248,0.15)' },  // 阶段三
+  { sym: '☰', name: '乾', color: '#f5c842', angle:   0 },
+  { sym: '☱', name: '兑', color: '#38bdf8', angle:  45 },
+  { sym: '☲', name: '离', color: '#ff6b35', angle:  90 },
+  { sym: '☳', name: '震', color: '#a78bfa', angle: 135 },
+  { sym: '☷', name: '坤', color: '#c8a96e', angle: 180 },
+  { sym: '☶', name: '艮', color: '#b0c4de', angle: 225 },
+  { sym: '☵', name: '坎', color: '#4fa3e0', angle: 270 },
+  { sym: '☴', name: '巽', color: '#5ecb7a', angle: 315 },
 ];
 
 let animProgress = 0;
 let animFrame;
 
 function toRad(deg) { return deg * Math.PI / 180; }
+
+// angle 在代码中的含义：传入值会减 90 度后再算坐标
+// 所以 angle=0   → toRad(-90)  → 圆环正上方（12 点方向）
+//     angle=90  → toRad(0)    → 圆环正右方（3 点方向）
+//     angle=180 → toRad(90)   → 圆环正下方（6 点方向）
+//     angle=270 → toRad(180)  → 圆环正左方（9 点方向）
 
 function drawRing(progress) {
   ctx.clearRect(0, 0, 300, 300);
@@ -742,17 +743,6 @@ function drawRing(progress) {
   ctx.lineWidth = 32;
   ctx.stroke();
 
-  // 阶段弧段
-  phaseColors.forEach(p => {
-    const sa = toRad(p.start - 90 - 22.5);
-    const ea = toRad(p.end - 90 + 22.5);
-    ctx.beginPath();
-    ctx.arc(cx, cy, 100, sa, ea);
-    ctx.strokeStyle = p.color;
-    ctx.lineWidth = 32;
-    ctx.stroke();
-  });
-
   // 进度弧（动画）
   ctx.beginPath();
   ctx.arc(cx, cy, 100, toRad(-90), toRad(-90 + 360 * progress));
@@ -760,7 +750,7 @@ function drawRing(progress) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // 连线
+  // 连线（顺时针连接八卦）
   trigrams.forEach((t, i) => {
     const next = trigrams[(i + 1) % trigrams.length];
     const x1 = cx + 100 * Math.cos(toRad(t.angle - 90));
@@ -839,9 +829,16 @@ function togglePhase(idx) {
 }
 
 // ───── 诊断 ─────
+const diagLabelMap = {
+  start: '启动乏力',
+  vague: '内容模糊',
+  rhythm: '节奏卡顿',
+  ending: '结尾平庸',
+  engage: '缺乏互动',
+};
+
 let activeDiag = null;
 function showDiag(key) {
-  // 隐藏所有
   document.querySelectorAll('.diag-result').forEach(el => el.classList.remove('visible'));
   document.querySelectorAll('.ptab').forEach(el => el.classList.remove('active'));
 
@@ -853,9 +850,8 @@ function showDiag(key) {
   const el = document.getElementById('diag-' + key);
   if (el) el.classList.add('visible');
 
-  // 高亮 tab
   document.querySelectorAll('.ptab').forEach(tab => {
-    if (tab.textContent.trim() === { start: '启动乏力', vague: '内容模糊', rhythm: '节奏卡顿', ending: '结尾平庸', engage: '缺乏互动' }[key]) {
+    if (tab.textContent.trim() === diagLabelMap[key]) {
       tab.classList.add('active');
     }
   });
@@ -881,9 +877,7 @@ function updateProgress() {
 // ───── 初始动画后高亮节点 ─────
 setTimeout(() => {
   trigrams.forEach((t, i) => {
-    setTimeout(() => {
-      drawRing(1);
-    }, i * 80);
+    setTimeout(() => { drawRing(1); }, i * 80);
   });
 }, 1200);
 </script>
