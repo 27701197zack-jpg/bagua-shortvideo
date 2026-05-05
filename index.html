@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>八卦指环循环 · 短视频元框架</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --card-bg: #12121a;
+    --border: rgba(255,255,255,0.08);
+    --gold: #f5c842;
+    --fire: #ff6b35;
+    --water: #4fa3e0;
+    --wood: #5ecb7a;
+    --earth: #c8a96e;
+    --metal: #b0c4de;
+    --thunder: #a78bfa;
+    --lake: #38bdf8;
+    --text-main: #f0ede6;
+    --text-sub: rgba(240,237,230,0.55);
+    --radius: 16px;
+    --glow-gold: 0 0 24px rgba(245,200,66,0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ───── Header ───── */
+  .hero {
+    text-align: center;
+    padding: 56px 24px 32px;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(245,200,66,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 11px;
+    letter-spacing: 2px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+  .hero h1 span { color: var(--gold); }
+  .hero p {
+    color: var(--text-sub);
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+
+  /* ───── 能量环图 ───── */
+  .ring-section {
+    padding: 16px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .ring-canvas-wrap {
+    position: relative;
+    width: 300px; height: 300px;
+    margin: 0 auto 20px;
+  }
+  #ringCanvas { display: block; }
+
+  .ring-hint {
+    font-size: 12px;
+    color: var(--text-sub);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  /* ───── 阶段卡片 ───── */
+  .phases {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .phase-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.3s;
+    cursor: pointer;
+  }
+  .phase-card.active {
+    border-color: rgba(245,200,66,0.4);
+    box-shadow: 0 0 20px rgba(245,200,66,0.1);
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+  }
+  .phase-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .phase-meta { flex: 1 }
+  .phase-title { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .phase-sub { font-size: 12px; color: var(--text-sub); }
+  .phase-toggle {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    transition: transform 0.3s;
+    flex-shrink: 0;
+    color: var(--text-sub);
+  }
+  .phase-card.active .phase-toggle { transform: rotate(180deg); color: var(--gold); }
+
+  .phase-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .phase-card.active .phase-body { max-height: 900px; }
+
+  .trigram-list {
+    padding: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .trigram-item {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 14px;
+    border-left: 3px solid transparent;
+  }
+  .trigram-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .trigram-sym {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .trigram-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .trigram-role {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.08);
+    color: var(--text-sub);
+    margin-left: auto;
+  }
+  .trigram-desc {
+    font-size: 13px;
+    color: var(--text-sub);
+    line-height: 1.6;
+  }
+  .trigram-desc strong { color: var(--text-main); }
+
+  /* ───── 诊断工具 ───── */
+  .diagnose-section {
+    padding: 16px;
+    margin: 0 16px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-sub { font-size: 13px; color: var(--text-sub); margin-bottom: 16px; }
+
+  .problem-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .ptab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: var(--text-sub);
+  }
+  .ptab.active {
+    background: var(--gold);
+    color: #0a0a0f;
+    border-color: var(--gold);
+    font-weight: 600;
+  }
+
+  .diag-result {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 120px;
+    display: none;
+  }
+  .diag-result.visible { display: block; }
+  .diag-bagua {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .diag-sym { font-size: 28px; }
+  .diag-name-wrap { flex: 1 }
+  .diag-name { font-size: 15px; font-weight: 700; }
+  .diag-aspect { font-size: 12px; color: var(--text-sub); }
+  .diag-check {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .diag-check strong { color: var(--water); }
+  .diag-fix {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .diag-fix strong { color: var(--gold); }
+  .fix-tag {
+    display: inline-block;
+    background: rgba(245,200,66,0.12);
+    border: 1px solid rgba(245,200,66,0.3);
+    color: var(--gold);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+
+  /* ───── 自检清单 ───── */
+  .checklist-section {
+    padding: 16px;
+    margin: 0 16px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .checklist { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    cursor: pointer;
+    transition: background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .check-item.checked { background: rgba(94,203,122,0.08); }
+  .check-box {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.2);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s;
+    margin-top: 1px;
+  }
+  .check-item.checked .check-box {
+    background: var(--wood);
+    border-color: var(--wood);
+    color: #fff;
+  }
+  .check-text { flex: 1 }
+  .check-label { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .check-q { font-size: 12px; color: var(--text-sub); line-height: 1.5; }
+  .check-item.checked .check-label { color: var(--wood); }
+
+  .progress-wrap { margin-top: 14px; }
+  .progress-bar-bg {
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--wood), var(--gold));
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+    width: 0%;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  /* ───── 能量流总结 ───── */
+  .flow-section {
+    padding: 16px;
+    margin: 0 16px 32px;
+    background: linear-gradient(135deg, rgba(245,200,66,0.06), rgba(79,163,224,0.06));
+    border: 1px solid rgba(245,200,66,0.2);
+    border-radius: var(--radius);
+    text-align: center;
+  }
+  .flow-path {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 16px 0;
+  }
+  .flow-sym {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+  }
+  .flow-arrow {
+    color: var(--gold);
+    font-size: 12px;
+    opacity: 0.6;
+  }
+  .flow-quote {
+    font-size: 13px;
+    color: var(--text-sub);
+    line-height: 1.7;
+    font-style: italic;
+  }
+  .flow-quote strong { color: var(--gold); font-style: normal; }
+
+  /* ───── bottom nav ───── */
+  .safe-area { height: 40px; }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="badge">Meta-Framework · 元框架</div>
+  <h1>八卦指环循环<br><span>短视频创作法</span></h1>
+  <p>从潜意识萌发到观众终极体验，能量流动的完整创作生命周期</p>
+</div>
+
+<!-- 环形图 -->
+<div class="ring-section">
+  <div class="ring-canvas-wrap">
+    <canvas id="ringCanvas" width="300" height="300"></canvas>
+  </div>
+  <div class="ring-hint">点击下方卡片 · 探索每个阶段</div>
+</div>
+
+<!-- 阶段卡片 -->
+<div class="phases">
+
+  <!-- 阶段一 -->
+  <div class="phase-card" data-phase="0" onclick="togglePhase(0)">
+    <div class="phase-header">
+      <div class="phase-icon" style="background:rgba(245,200,66,0.12)">🔋</div>
+      <div class="phase-meta">
+        <div class="phase-title">阶段一：潜藏与启动</div>
+        <div class="phase-sub">坤 → 震 → 乾 · Idea &amp; Initiation</div>
+      </div>
+      <div class="phase-toggle">▼</div>
+    </div>
+    <div class="phase-body">
+      <div class="trigram-list">
+        <div class="trigram-item" style="border-left-color:#c8a96e">
+          <div class="trigram-top">
+            <div class="trigram-sym">☷</div>
+            <div class="trigram-name">坤 · 手掌</div>
+            <div class="trigram-role">地基 / 承载</div>
+          </div>
+          <div class="trigram-desc">你的<strong>知识储备、兴趣点与领域经验</strong>。这是你「可以做」的广阔平台，决定了你能产出什么内容。</div>
+        </div>
+        <div class="trigram-item" style="border-left-color:#a78bfa">
+          <div class="trigram-top">
+            <div class="trigram-sym">☳</div>
+            <div class="trigram-name">震 · 爆发</div>
+            <div class="trigram-role">动力 / 启动</div>
+          </div>
+          <div class="trigram-desc">灵感迸发的那一刻，<strong>「我要拍了！」</strong>的冲动。决定视频是快速切入还是缓慢铺陈。</div>
+        </div>
+        <div class="trigram-item" style="border-left-color:#f5c842">
+          <div class="trigram-top">
+            <div class="trigram-sym">☰</div>
+            <div class="trigram-name">乾 · 拇指</div>
+            <div class="trigram-role">意志 / 发起</div>
+          </div>
+          <div class="trigram-desc">你的<strong>核心目标</strong>：为赚流量？传递理念？发泄情绪？这是整个视频的「决定」，影响一切后续选择。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 阶段二 -->
+  <div class="phase-card" data-phase="1" onclick="togglePhase(1)">
+    <div class="phase-header">
+      <div class="phase-icon" style="background:rgba(79,163,224,0.12)">🗺️</div>
+      <div class="phase-meta">
+        <div class="phase-title">阶段二：探索与展现</div>
+        <div class="phase-sub">坎 → 离 → 巽 · Execution &amp; Manifestation</div>
+      </div>
+      <div class="phase-toggle">▼</div>
+    </div>
+    <div class="phase-body">
+      <div class="trigram-list">
+        <div class="trigram-item" style="border-left-color:#4fa3e0">
+          <div class="trigram-top">
+            <div class="trigram-sym">☵</div>
+            <div class="trigram-name">坎 · 食指</div>
+            <div class="trigram-role">方向 / 引导</div>
+          </div>
+          <div class="trigram-desc">脚本的<strong>「问题意识」</strong>：你在解决什么问题？在引导观众思考什么？这是视频的核心驱动命题。</div>
+        </div>
+        <div class="trigram-item" style="border-left-color:#ff6b35">
+          <div class="trigram-top">
+            <div class="trigram-sym">☲</div>
+            <div class="trigram-name">离 · 中指</div>
+            <div class="trigram-role">核心 / 显现</div>
+          </div>
+          <div class="trigram-desc">视频的<strong>「主角和信息点」</strong>。必须清晰、亮眼、聚焦——就是那个被点亮的、最闪耀的知识点或画面。</div>
+        </div>
+        <div class="trigram-item" style="border-left-color:#5ecb7a">
+          <div class="trigram-top">
+            <div class="trigram-sym">☴</div>
+            <div class="trigram-name">巽 · 无名指</div>
+            <div class="trigram-role">流动 / 连接</div>
+          </div>
+          <div class="trigram-desc">视频的<strong>「剪辑节奏」</strong>：如何从A点平顺过渡到B点？用转场、BGM、画面切换让信息流顺畅自然。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 阶段三 -->
+  <div class="phase-card" data-phase="2" onclick="togglePhase(2)">
+    <div class="phase-header">
+      <div class="phase-icon" style="background:rgba(56,189,248,0.12)">🛑</div>
+      <div class="phase-meta">
+        <div class="phase-title">阶段三：收束与反馈</div>
+        <div class="phase-sub">艮 → 兑 · Boundary &amp; Feedback</div>
+      </div>
+      <div class="phase-toggle">▼</div>
+    </div>
+    <div class="phase-body">
+      <div class="trigram-list">
+        <div class="trigram-item" style="border-left-color:#b0c4de">
+          <div class="trigram-top">
+            <div class="trigram-sym">☶</div>
+            <div class="trigram-name">艮 · 小指</div>
+            <div class="trigram-role">边界 / 定点</div>
+          </div>
+          <div class="trigram-desc">结尾的<strong>「锚点」</strong>：一个强有力的总结句、画面定格或明确的CTA，让观众知道「到此为止，不要跑开」。</div>
+        </div>
+        <div class="trigram-item" style="border-left-color:#38bdf8">
+          <div class="trigram-top">
+            <div class="trigram-sym">☱</div>
+            <div class="trigram-name">兑 · 愉悦</div>
+            <div class="trigram-role">反馈 / 喜悦</div>
+          </div>
+          <div class="trigram-desc">观众的<strong>「情绪反馈」</strong>：豁然开朗、开心大笑、赶紧点赞分享的交流欲望。这是整个循环的<strong>能量回收</strong>。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 诊断工具 -->
+<div class="diagnose-section">
+  <div class="section-title">🔍 创作问题诊断</div>
+  <div class="section-sub">选择你的创作困境，找到对应的八卦解法</div>
+
+  <div class="problem-tabs">
+    <div class="ptab" onclick="showDiag('start')">启动乏力</div>
+    <div class="ptab" onclick="showDiag('vague')">内容模糊</div>
+    <div class="ptab" onclick="showDiag('rhythm')">节奏卡顿</div>
+    <div class="ptab" onclick="showDiag('ending')">结尾平庸</div>
+    <div class="ptab" onclick="showDiag('engage')">缺乏互动</div>
+  </div>
+
+  <div class="diag-result" id="diag-start">
+    <div class="diag-bagua">
+      <div class="diag-sym">☰☳</div>
+      <div class="diag-name-wrap">
+        <div class="diag-name">乾 + 震</div>
+        <div class="diag-aspect">意志力 · 启动冲力</div>
+      </div>
+    </div>
+    <div class="diag-check"><strong>🔎 检查点：</strong>你的视频是否有强烈的「我要做」冲动？开篇 3 秒是否够炸？</div>
+    <div class="diag-fix">
+      <div class="fix-tag">⚡ 解决方案</div><br>
+      增加开场 Hook 的力度（乾），用问题、冲突或反常识开场；使用<strong>快节奏画面切入</strong>（震），前 3 帧给到情绪冲击。
+    </div>
+  </div>
+
+  <div class="diag-result" id="diag-vague">
+    <div class="diag-bagua">
+      <div class="diag-sym">☵☲</div>
+      <div class="diag-name-wrap">
+        <div class="diag-name">坎 + 离</div>
+        <div class="diag-aspect">问题意识 · 核心显现</div>
+      </div>
+    </div>
+    <div class="diag-check"><strong>🔎 检查点：</strong>你在引导观众思考什么（坎）？你的核心信息是否足够闪亮（离）？</div>
+    <div class="diag-fix">
+      <div class="fix-tag">💡 解决方案</div><br>
+      明确你的<strong>「一个主命题」</strong>（离）——整条视频只传递一件事；并设计一个<strong>核心提问句</strong>（坎）引发观众共鸣。
+    </div>
+  </div>
+
+  <div class="diag-result" id="diag-rhythm">
+    <div class="diag-bagua">
+      <div class="diag-sym">☴</div>
+      <div class="diag-name-wrap">
+        <div class="diag-name">巽</div>
+        <div class="diag-aspect">顺畅连接 · 流动</div>
+      </div>
+    </div>
+    <div class="diag-check"><strong>🔎 检查点：</strong>你的信息衔接是否自然？转场是否流畅？是否有突兀的「跳切」？</div>
+    <div class="diag-fix">
+      <div class="fix-tag">🌬️ 解决方案</div><br>
+      避免生硬跳切，用 BGM 节奏点来触发转场；让<strong>视觉逻辑顺着「风」走</strong>——每个画面为下一个画面做铺垫。
+    </div>
+  </div>
+
+  <div class="diag-result" id="diag-ending">
+    <div class="diag-bagua">
+      <div class="diag-sym">☶</div>
+      <div class="diag-name-wrap">
+        <div class="diag-name">艮</div>
+        <div class="diag-aspect">稳定边界 · 定点</div>
+      </div>
+    </div>
+    <div class="diag-check"><strong>🔎 检查点：</strong>你的视频有没有一个强有力的「定格」？还是虚晃一枪就消失了？</div>
+    <div class="diag-fix">
+      <div class="fix-tag">🏔️ 解决方案</div><br>
+      结尾不要只是「谢谢观看」——要是一个<strong>总结性金句 + 强画面定格</strong>，或一个明确的行动号召（关注 / 评论 / 收藏），让观众「停下来」。
+    </div>
+  </div>
+
+  <div class="diag-result" id="diag-engage">
+    <div class="diag-bagua">
+      <div class="diag-sym">☱</div>
+      <div class="diag-name-wrap">
+        <div class="diag-name">兑</div>
+        <div class="diag-aspect">体验反馈 · 喜悦</div>
+      </div>
+    </div>
+    <div class="diag-check"><strong>🔎 检查点：</strong>观众看完后感受是什么？是平静（艮）还是喜悦（兑）？有没有评论冲动？</div>
+    <div class="diag-fix">
+      <div class="fix-tag">💬 解决方案</div><br>
+      在结尾<strong>抛出一个开放性问题</strong>（兑），邀请观众在评论区「交谈」；或制造「啊哈时刻」让观众产生豁然开朗的喜悦，激发分享欲。
+    </div>
+  </div>
+</div>
+
+<!-- 自检清单 -->
+<div class="checklist-section">
+  <div class="section-title">✅ 发布前能量自检</div>
+  <div class="section-sub">发布前逐一打勾，确保能量流动顺畅</div>
+
+  <div class="checklist">
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☷ 坤 — 我有足够的积累来支撑这条内容</div>
+        <div class="check-q">这个话题我真的懂吗？我在说「对的」事情吗？</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☳ 震 — 开场 3 秒有足够的冲击力</div>
+        <div class="check-q">第一帧能让人停下来吗？有悬念/冲突/反常识？</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☰ 乾 — 我清楚这条视频的核心目标</div>
+        <div class="check-q">我想要什么结果？流量/品牌/情感表达？目标只有一个吗？</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☵ 坎 — 视频有清晰的「问题意识」</div>
+        <div class="check-q">我在帮观众解决什么问题？脚本中有引导性的问题吗？</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☲ 离 — 核心信息点只有一个，且足够亮</div>
+        <div class="check-q">看完视频，观众能记住什么？只有这一件事吗？</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☴ 巽 — 剪辑节奏流畅，没有生硬跳切</div>
+        <div class="check-q">每段转场是否自然？BGM 节奏与画面是否吻合？</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☶ 艮 — 结尾有强力「锚点」，让观众停下来</div>
+        <div class="check-q">最后一帧有力量吗？有金句/定格/明确 CTA 吗？</div>
+      </div>
+    </div>
+    <div class="check-item" onclick="toggleCheck(this)">
+      <div class="check-box">✓</div>
+      <div class="check-text">
+        <div class="check-label">☱ 兑 — 有设计观众的情绪反馈出口</div>
+        <div class="check-q">观众看完会想评论什么？有没有「啊哈时刻」或引发交流的问题？</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / 8 · 开始自检</div>
+  </div>
+</div>
+
+<!-- 能量流总结 -->
+<div class="flow-section">
+  <div class="section-title" style="justify-content:center">⚡ 能量循环路径</div>
+  <div class="flow-path">
+    <div class="flow-sym">☷</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☳</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☰</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☵</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☲</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☴</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☶</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-sym">☱</div>
+    <div class="flow-arrow" style="color:var(--wood)">↺</div>
+  </div>
+  <div class="flow-quote">
+    每一条爆款视频，都是一次<strong>完整的能量循环</strong>。<br>
+    不是「拍得好看」，而是「能量流动顺畅」。
+  </div>
+</div>
+
+<div class="safe-area"></div>
+
+<script>
+// ───── 环形图绘制 ─────
+const canvas = document.getElementById('ringCanvas');
+const ctx = canvas.getContext('2d');
+const cx = 150, cy = 150;
+
+const trigrams = [
+  { sym: '☷', name: '坤', color: '#c8a96e', angle: -90 },
+  { sym: '☳', name: '震', color: '#a78bfa', angle: -45 },
+  { sym: '☰', name: '乾', color: '#f5c842', angle: 0 },
+  { sym: '☵', name: '坎', color: '#4fa3e0', angle: 45 },
+  { sym: '☲', name: '离', color: '#ff6b35', angle: 90 },
+  { sym: '☴', name: '巽', color: '#5ecb7a', angle: 135 },
+  { sym: '☶', name: '艮', color: '#b0c4de', angle: 180 },
+  { sym: '☱', name: '兑', color: '#38bdf8', angle: 225 },
+];
+
+const phaseColors = [
+  { start: -90, end: 0, color: 'rgba(245,200,66,0.15)' },   // 阶段一
+  { start: 0, end: 135, color: 'rgba(79,163,224,0.15)' },   // 阶段二
+  { start: 135, end: 270, color: 'rgba(56,189,248,0.15)' },  // 阶段三
+];
+
+let animProgress = 0;
+let animFrame;
+
+function toRad(deg) { return deg * Math.PI / 180; }
+
+function drawRing(progress) {
+  ctx.clearRect(0, 0, 300, 300);
+
+  // 背景圆
+  ctx.beginPath();
+  ctx.arc(cx, cy, 100, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 32;
+  ctx.stroke();
+
+  // 阶段弧段
+  phaseColors.forEach(p => {
+    const sa = toRad(p.start - 90 - 22.5);
+    const ea = toRad(p.end - 90 + 22.5);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 100, sa, ea);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 32;
+    ctx.stroke();
+  });
+
+  // 进度弧（动画）
+  ctx.beginPath();
+  ctx.arc(cx, cy, 100, toRad(-90), toRad(-90 + 360 * progress));
+  ctx.strokeStyle = 'rgba(245,200,66,0.5)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 连线
+  trigrams.forEach((t, i) => {
+    const next = trigrams[(i + 1) % trigrams.length];
+    const x1 = cx + 100 * Math.cos(toRad(t.angle - 90));
+    const y1 = cy + 100 * Math.sin(toRad(t.angle - 90));
+    const x2 = cx + 100 * Math.cos(toRad(next.angle - 90));
+    const y2 = cy + 100 * Math.sin(toRad(next.angle - 90));
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // 卦节点
+  trigrams.forEach(t => {
+    const x = cx + 100 * Math.cos(toRad(t.angle - 90));
+    const y = cy + 100 * Math.sin(toRad(t.angle - 90));
+
+    // 发光
+    const grd = ctx.createRadialGradient(x, y, 0, x, y, 18);
+    grd.addColorStop(0, t.color + '44');
+    grd.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(x, y, 18, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // 圆圈
+    ctx.beginPath();
+    ctx.arc(x, y, 13, 0, Math.PI * 2);
+    ctx.fillStyle = '#12121a';
+    ctx.fill();
+    ctx.strokeStyle = t.color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 卦符
+    ctx.font = '14px serif';
+    ctx.fillStyle = t.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t.sym, x, y);
+  });
+
+  // 中心图案
+  ctx.font = 'bold 13px -apple-system, PingFang SC, sans-serif';
+  ctx.fillStyle = 'rgba(245,200,66,0.8)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('能量', cx, cy - 8);
+  ctx.fillText('循环', cx, cy + 8);
+}
+
+function animateRing() {
+  animProgress += 0.008;
+  if (animProgress > 1) animProgress = 1;
+  drawRing(animProgress);
+  if (animProgress < 1) {
+    animFrame = requestAnimationFrame(animateRing);
+  }
+}
+
+animateRing();
+
+// ───── 阶段卡片展开 ─────
+function togglePhase(idx) {
+  const cards = document.querySelectorAll('.phase-card');
+  cards.forEach((card, i) => {
+    if (i === idx) {
+      card.classList.toggle('active');
+    } else {
+      card.classList.remove('active');
+    }
+  });
+}
+
+// ───── 诊断 ─────
+let activeDiag = null;
+function showDiag(key) {
+  // 隐藏所有
+  document.querySelectorAll('.diag-result').forEach(el => el.classList.remove('visible'));
+  document.querySelectorAll('.ptab').forEach(el => el.classList.remove('active'));
+
+  if (activeDiag === key) {
+    activeDiag = null;
+    return;
+  }
+
+  const el = document.getElementById('diag-' + key);
+  if (el) el.classList.add('visible');
+
+  // 高亮 tab
+  document.querySelectorAll('.ptab').forEach(tab => {
+    if (tab.textContent.trim() === { start: '启动乏力', vague: '内容模糊', rhythm: '节奏卡顿', ending: '结尾平庸', engage: '缺乏互动' }[key]) {
+      tab.classList.add('active');
+    }
+  });
+
+  activeDiag = key;
+}
+
+// ───── 自检清单 ─────
+function toggleCheck(item) {
+  item.classList.toggle('checked');
+  updateProgress();
+}
+
+function updateProgress() {
+  const items = document.querySelectorAll('.check-item');
+  const checked = document.querySelectorAll('.check-item.checked').length;
+  const pct = (checked / items.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  const labels = ['0 / 8 · 开始自检', '1 / 8 · 已启动 ⚡', '2 / 8 · 能量流动中…', '3 / 8 · 继续检查', '4 / 8 · 过半了！', '5 / 8 · 快完成了', '6 / 8 · 接近满能量', '7 / 8 · 最后一步！', '8 / 8 · 🎉 能量满格，可以发布！'];
+  document.getElementById('progressLabel').textContent = labels[checked];
+}
+
+// ───── 初始动画后高亮节点 ─────
+setTimeout(() => {
+  trigrams.forEach((t, i) => {
+    setTimeout(() => {
+      drawRing(1);
+    }, i * 80);
+  });
+}, 1200);
+</script>
+</body>
+</html>
